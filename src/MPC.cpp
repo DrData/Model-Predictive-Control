@@ -59,18 +59,18 @@ class FG_eval {
       fg[0] += 1000.0*CppAD::pow(vars[epsi_start + t] - ref_epsi, 2);
       fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
-/*
+
     // Add cost ~ derivative term - penalize big changes in the errors
     for (size_t t = 0; t < N-1; t++) {
       fg[0] += 300.0*CppAD::pow(vars[cte_start + t + 1] - vars[cte_start + t], 2);
       fg[0] += 300.0*CppAD::pow(vars[epsi_start + t + 1] - vars[epsi_start + t], 2);
       fg[0] += 10*CppAD::pow(vars[v_start + t+1] - vars[v_start + t], 2);
     }
-*/
+
     // Minimize the use of actuators.
     for (size_t t = 0; t < N - 1; t++) {
-      fg[0] += 200.0 * CppAD::pow(vars[delta_start + t], 2);
-      fg[0] += 50.0 * CppAD::pow(vars[a_start + t], 2);
+      fg[0] += CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += CppAD::pow(vars[a_start + t], 2);
     }
 
     // Control for big changes in the actuators
@@ -111,11 +111,6 @@ class FG_eval {
       AD<double> psides0 = CppAD::atan(3*coeffs[3]*x0*x0 + 2*coeffs[2]*x0 + coeffs[1]);
 
       // Setup the rest of the model constraints
-//      AD<double> del_t = dt + latency * CppAD::exp(-CppAD::pow((t-1),2) );
-      //double del_t = dt + latency * 1/(t*t);
-      //double del_t = dt + latency * 1/t;
-      //double del_t = dt + latency/sqrt(t) ;
-      double del_t = dt;
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
       fg[1 + psi_start + t] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
@@ -124,6 +119,10 @@ class FG_eval {
       // Account for latency by adjusting for additional error
       // due motion of the car and the "extra" time it has to drift
       // during the latency
+      //double del_t = dt;
+      //double del_t = dt + latency * 1/(t*t);
+      //double del_t = dt + latency * 1/t;
+      double del_t = dt + latency/sqrt(t) ;
       fg[1 + cte_start + t] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * del_t));
       fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * del_t);
     }
